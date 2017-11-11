@@ -56,7 +56,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 scaler = preprocessing.StandardScaler()
 scaler.fit(X_train)
 X_train = scaler.transform(X_train)
-X_test = scaler.transform(X_test)
 
 load = True
 if load == False:
@@ -72,6 +71,7 @@ print clf
 print "Model's loss =",clf.loss_
 
 if __name__ == "__main__":
+	X_test = scaler.transform(X_test)
 	print accuracy_score(y_test, clf.predict(X_test))
 
 X_live_test = []
