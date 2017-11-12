@@ -1,11 +1,14 @@
 from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import BaggingClassifier, AdaBoostClassifier
 import csv
 import numpy as np
 from random import randint, shuffle
 from sklearn.metrics import accuracy_score
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
-from sklearn.decomposition import FastICA
+from sklearn.decomposition import FastICA, PCA
 import matplotlib.pyplot as plt
 import pywt
 import pywt.data
@@ -14,12 +17,21 @@ import sys
 import traceback
 
 entries_required_for_single_prediction = 1
-setting = "look"
-# setting = "cube"
-# setting = "flickering"
+# setting = "look" #94% by ANN, 30 iter
+setting = "cube" #96% by ANN, 30 iter
+# setting = "flickering" #91% by ANN, 30 iter
+ANN = True
+SVM = False
+bagging_svm = False
+adaboost_decision_tree = False
+
+enable_DWT = True
 
 X = np.array([])
 y = []
+
+assert(ANN or SVM or bagging_svm or adaboost_decision_tree) #Either ANN or SVM or bagging_svm or adaboost enabled
+assert(not( (ANN and SVM) or (ANN and bagging_svm) or  (bagging_svm and SVM) or (ANN and adaboost_decision_tree) or (adaboost_decision_tree and SVM) or (adaboost_decision_tree and bagging_svm)))
 
 def doDWT(data, w):
 	mode = pywt.Modes.smooth
@@ -38,13 +50,16 @@ def doDWT(data, w):
 
 def doDWTSet(X):
 	X = np.array(X)
-	X = X.T
-	n_cols = doDWT(X[0, :], 'sym5').shape[0]
-	X_temp = np.zeros((X.shape[0], n_cols))
-	for row in range(X.shape[0]):
-		X_temp[row, :] = doDWT(X[row, :], 'sym5')
-	X = X_temp.T
-	return X
+	if enable_DWT:
+		X = X.T
+		n_cols = doDWT(X[0, :], 'sym5').shape[0]
+		X_temp = np.zeros((X.shape[0], n_cols))
+		for row in range(X.shape[0]):
+			X_temp[row, :] = doDWT(X[row, :], 'sym5')
+		X = X_temp.T
+		return X
+	else:
+		return X
 
 def convertToFloatList(l):
 	l = [float(i) for i in l]
@@ -59,17 +74,14 @@ def addDataFromFile(file, label):
 		next(reader, None)
 		for row in reader:
 			if '0' not in row:
-				# X_y.append((convertToFloatList(row[1:29:2]), label)) #1 to 29 to keep only EEG sensor readings, skip 2 to skip qualities
 				local_X.append(convertToFloatList(row[1:29:2]))
 				y.append(label)
-	# print X.shape, doDWTSet(local_X).shape 
 	if X.size != 0:
 		X = np.append(X, doDWTSet(local_X), axis = 0)
 	else:
 		X = doDWTSet(local_X)
 	while len(y) != X.shape[0]:
 		y.append(label)
-		# print "y's size",len(y)
 
 
 
@@ -88,7 +100,7 @@ def loadData():
 	addDataFromFile('dataset/'+ setting + '/rishabh/right.csv', "R")
 
 
-loadData()
+loadData() #DWT performed during load itself. A switch variable to enable/disable DWT is at code start
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
@@ -96,31 +108,56 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # ica.fit(np.asarray(X_train))
 # X_train = ica.transform(X_train)
 
+# pca = PCA()
+# pca.fit(X_train)
+# X_train = pca.transform(X_train)
 
 scaler = preprocessing.StandardScaler()
 scaler.fit(X_train)
 X_train = scaler.transform(X_train)
 
 
-
-
 load = False
 if load == False:
-	# clf = MLPClassifier(solver = 'sgd', activation = 'tanh', alpha=1e-5, hidden_layer_sizes=(50, 50), random_state=1, max_iter = 300, verbose = True, tol = 1e-6, learning_rate = 'constant', learning_rate_init = 0.01)
-	# clf = MLPClassifier(solver = 'adam', activation = 'tanh', alpha=1e-5, hidden_layer_sizes=(50, 50), random_state=1, max_iter = 300, verbose = True, tol = 1e-6, learning_rate = 'adaptive', learning_rate_init = 0.01)
-	clf = MLPClassifier(solver = 'adam', activation = 'tanh', alpha=1e-5, hidden_layer_sizes=(50, 50), random_state=1, max_iter = 300, verbose = True, tol = 1e-6, learning_rate = 'adaptive')
-	clf.fit(X_train, y_train)
-	with open(setting + "_neural_adam_tanh_50_50_new.model", "wb") as fp:   #Pickling
-		pickle.dump(clf, fp)
+	if ANN:
+		clf = MLPClassifier(solver = 'adam', activation = 'tanh', alpha=1e-5, hidden_layer_sizes=(50, 50), random_state=1, max_iter = 300, verbose = True, tol = 1e-6, learning_rate = 'adaptive')
+		clf.fit(X_train, y_train)
+		with open(setting + "_neural_adam_tanh_50_50_new.model", "wb") as fp:   #Pickling
+			pickle.dump(clf, fp)
+	elif SVM:
+		clf = SVC(verbose = True)
+		clf.fit(X_train, y_train)
+		with open(setting + "_svc_rbf_new.model", "wb") as fp:   #Pickling
+			pickle.dump(clf, fp)
+	elif bagging_svm:
+		clf = BaggingClassifier(SVC(verbose = True), verbose = True, n_jobs = 3, max_features = 0.5, max_samples= 0.5)
+		clf.fit(X_train, y_train)
+		with open(setting + "_bagging_svc_rbf_new.model", "wb") as fp:   #Pickling
+			pickle.dump(clf, fp)
+	elif adaboost_decision_tree:
+		clf = AdaBoostClassifier(DecisionTreeClassifier(), n_estimators=40)
+		clf.fit(X_train, y_train)
+		with open(setting + "_adaboost_decision_tree_new.model", "wb") as fp:   #Pickling
+			pickle.dump(clf, fp)
 else:
-	with open(setting + "_neural_adam_tanh_50_50.model", "rb") as fp:   #Pickling
-		clf = pickle.load(fp)
+	if ANN:
+		with open(setting + "_neural_adam_tanh_50_50.model", "rb") as fp:   #Pickling
+			clf = pickle.load(fp)
+	elif SVM:
+		with open(setting + "_svc_rbf.model", "rb") as fp:   #Pickling
+			clf = pickle.load(fp)
+	elif bagging_svm:
+		with open(setting + "_bagging_svc_rbf_new.model", "rb") as fp:   #Pickling
+			clf = pickle.load(fp)
+	elif adaboost_decision_tree:
+		with open(setting + "_adaboost_decision_tree.model", "rb") as fp:   #Pickling
+			clf = pickle.load(fp)
 
 print clf
-print "Model's loss =",clf.loss_
 
 if __name__ == "__main__":
 	# X_test = ica.transform(X_test)
+	# X_test = pca.transform(X_test)
 	X_test = scaler.transform(X_test)
 	print accuracy_score(y_test, clf.predict(X_test))
 
