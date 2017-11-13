@@ -19,7 +19,7 @@ file = 'emotiv_encrypted_data_UD20160103001874_2017-04-05.17-21-32.384061.csv'
 # print "Reading from file",file
 
 if __name__ == "__main__":
-    with Emotiv(display_output=True, verbose=True, input_source=file, write = True) as headset:
+    with Emotiv(display_output=True, input_source=file, write = True) as headset:
     # with Emotiv(display_output=False, verbose=True, write = True) as headset:
         print("Serial Number: %s" % headset.serial_number)
 

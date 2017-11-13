@@ -2,8 +2,6 @@
 import sys
 import time
 from threading import Thread, Lock
-sys.path.append('..')
-import mlp
 
 from .python_queue import Queue
 from .util import writer_task_to_line
@@ -100,20 +98,11 @@ class EmotivWriter(object):
                     if data_buffer is not None:
                         data_buffer.append(data_to_write)
                         if len(data_buffer) >= data_buffer_size - 1:
-                            self.counter += 1
-                            print self.counter
-                            if self.counter % 10 == 0:                            
-                                print "Sending", len(data_buffer),"amount of data"
-                                # print data_buffer
-                                mlp.new_data(data_buffer)
-                            # print "Sending", len(data_buffer)
-                            # print data_to_write
-                            # mlp.new_data(data_to_write)
                             output_file.writelines(data_buffer)
                             data_buffer = []
                     else:
                         output_file.write(data_to_write)
-
+            	output_file.flush()
             except Exception as ex:
                 if self.verbose:
                     print("Error: {}".format(ex.message))

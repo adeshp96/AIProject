@@ -15,6 +15,9 @@ import pywt.data
 import pickle
 import sys
 import traceback
+from threading import Thread
+from time import sleep
+from os.path import isfile
 
 entries_required_for_single_prediction = 1
 # setting = "look" #94% by ANN, 30 iter
@@ -117,7 +120,7 @@ scaler.fit(X_train)
 X_train = scaler.transform(X_train)
 
 
-load = False
+load = True
 if load == False:
 	if ANN:
 		clf = MLPClassifier(solver = 'adam', activation = 'tanh', alpha=1e-5, hidden_layer_sizes=(50, 50), random_state=1, max_iter = 300, verbose = True, tol = 1e-6, learning_rate = 'adaptive')
@@ -155,11 +158,6 @@ else:
 
 print clf
 
-if __name__ == "__main__":
-	# X_test = ica.transform(X_test)
-	# X_test = pca.transform(X_test)
-	X_test = scaler.transform(X_test)
-	print accuracy_score(y_test, clf.predict(X_test))
 
 X_live_test = []
 
@@ -167,6 +165,7 @@ def predict():
 	global X_live_test
 	try:
 		if len(X_live_test) >= entries_required_for_single_prediction:
+			X_live_test = doDWTSet(X_live_test)
 			X_live_test = scaler.transform(X_live_test)
 			print clf.predict(X_live_test)
 			X_live_test = []
@@ -176,15 +175,53 @@ def predict():
 		print traceback.print_exc()
 		print sys.exc_info()[0]
 
-def new_data(lines):
-	reader = csv.reader(lines, delimiter=',', quotechar='|')
-	for row in reader:
-		if '0' not in row:
-			if row is not None:
-				new_x = convertToFloatList(row[1:29:2])
-				X_live_test.append(new_x)
-	print "Received length is", len(X_live_test)
-	sys.stdout.flush()
-	predict()
+parsed_till_line_number = 0
+
+def parse_new_data():
+	global parsed_till_line_number
+	while True:
+		if file is None:
+			print 'File not initialized yet. Can\'t predict. Going back to sleep'
+			sleep(2)
+			continue
+		if isfile(file) == False:
+			print 'File not created yet. Can\'t predict. Going back to sleep'
+			sleep(2)
+			continue
+		reader = csv.reader(open(file), delimiter=',', quotechar='|')
+		next(reader, None)
+		line_number = 0
+		for row in reader:
+			line_number += 1
+			if line_number > parsed_till_line_number:
+				if '0' not in row:
+					if row is not None:
+						print convertToFloatList(row[1:29:2])
+						X_live_test.append(convertToFloatList(row[1:29:2]))
+		parsed_till_line_number = line_number
+		sys.stdout.flush()
+		if len(X_live_test) >= entries_required_for_single_prediction:
+			print "Received length is", len(X_live_test)
+			predict()
+		else:
+			print ".",
+		sleep(2)
 
 
+
+file = None
+def init(file_path):
+	global file
+	file = file_path
+	print "Prediction thread: Path set as",file
+
+
+if __name__ == "__main__":
+	# X_test = ica.transform(X_test)
+	# X_test = pca.transform(X_test)
+	X_test = scaler.transform(X_test)
+	print "Accuracy:",accuracy_score(y_test, clf.predict(X_test))
+else:
+	thread = Thread(target = parse_new_data)
+	thread.start()
+	print "Started prediction thread"
