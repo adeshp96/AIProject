@@ -167,7 +167,13 @@ def predict():
 		if len(X_live_test) >= entries_required_for_single_prediction:
 			X_live_test = doDWTSet(X_live_test)
 			X_live_test = scaler.transform(X_live_test)
-			print clf.predict(X_live_test)
+			freq = {}
+			for i in clf.predict(X_live_test):
+				if i in freq:
+					freq[i] += 1
+				else:
+					freq[i] = 1
+			print freq
 			X_live_test = []
 		else:
 			print "length too short to predict"
@@ -182,11 +188,11 @@ def parse_new_data():
 	while True:
 		if file is None:
 			print 'File not initialized yet. Can\'t predict. Going back to sleep'
-			sleep(2)
+			sleep(5)
 			continue
 		if isfile(file) == False:
 			print 'File not created yet. Can\'t predict. Going back to sleep'
-			sleep(2)
+			sleep(5)
 			continue
 		reader = csv.reader(open(file), delimiter=',', quotechar='|')
 		next(reader, None)
@@ -196,7 +202,7 @@ def parse_new_data():
 			if line_number > parsed_till_line_number:
 				if '0' not in row:
 					if row is not None:
-						print convertToFloatList(row[1:29:2])
+						# print convertToFloatList(row[1:29:2])
 						X_live_test.append(convertToFloatList(row[1:29:2]))
 		parsed_till_line_number = line_number
 		sys.stdout.flush()
@@ -205,7 +211,7 @@ def parse_new_data():
 			predict()
 		else:
 			print ".",
-		sleep(2)
+		sleep(5)
 
 
 
