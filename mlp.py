@@ -18,17 +18,18 @@ import traceback
 from threading import Thread
 from time import sleep
 from os.path import isfile
+import glob
 
 entries_required_for_single_prediction = 1
 # setting = "look" #94% by ANN, 30 iter
-setting = "cube" #96% by ANN, 30 iter
-# setting = "flickering" #91% by ANN, 30 iter
+# setting = "cube" #96% by ANN, 30 iter
+setting = "flickering" #91% by ANN, 30 iter
 ANN = True
 SVM = False
 bagging_svm = False
 adaboost_decision_tree = False
 
-enable_DWT = True
+enable_DWT = False
 
 X = np.array([])
 y = []
@@ -89,18 +90,26 @@ def addDataFromFile(file, label):
 
 
 def loadData():
-	addDataFromFile('dataset/'+ setting + '/adesh/left.csv', "L")
-	addDataFromFile('dataset/'+ setting + '/adesh/down.csv', "D")
-	addDataFromFile('dataset/'+ setting + '/adesh/up.csv', "U")
-	addDataFromFile('dataset/'+ setting + '/adesh/right.csv', "R")
-	addDataFromFile('dataset/'+ setting + '/kunal/left.csv', "L")
-	addDataFromFile('dataset/'+ setting + '/kunal/down.csv', "D")
-	addDataFromFile('dataset/'+ setting + '/kunal/up.csv', "U")
-	addDataFromFile('dataset/'+ setting + '/kunal/right.csv', "R")
-	addDataFromFile('dataset/'+ setting + '/rishabh/left.csv', "L")
-	addDataFromFile('dataset/'+ setting + '/rishabh/down.csv', "D")
-	addDataFromFile('dataset/'+ setting + '/rishabh/up.csv', "U")
-	addDataFromFile('dataset/'+ setting + '/rishabh/right.csv', "R")
+	file_regex = 'dataset2/'+ setting + '/right/*.csv'
+	label = 'R'
+	for filename in glob.iglob(file_regex):
+		print(filename)
+		addDataFromFile(filename, label)
+	file_regex = 'dataset2/'+ setting + '/left/*.csv'
+	label = 'L'
+	for filename in glob.iglob(file_regex):
+		print(filename)
+		addDataFromFile(filename, label)
+	file_regex = 'dataset2/'+ setting + '/up/*.csv'
+	label = 'U'
+	for filename in glob.iglob(file_regex):
+		print(filename)
+		addDataFromFile(filename, label)
+	file_regex = 'dataset2/'+ setting + '/down/*.csv'
+	label = 'D'
+	for filename in glob.iglob(file_regex):
+		print(filename)
+		addDataFromFile(filename, label)
 
 
 loadData() #DWT performed during load itself. A switch variable to enable/disable DWT is at code start
@@ -120,7 +129,7 @@ scaler.fit(X_train)
 X_train = scaler.transform(X_train)
 
 
-load = True
+load = False
 if load == False:
 	if ANN:
 		clf = MLPClassifier(solver = 'adam', activation = 'tanh', alpha=1e-5, hidden_layer_sizes=(50, 50), random_state=1, max_iter = 300, verbose = True, tol = 1e-6, learning_rate = 'adaptive')
@@ -211,7 +220,7 @@ def parse_new_data():
 			predict()
 		else:
 			print ".",
-		sleep(5)
+		sleep(10)
 
 
 
