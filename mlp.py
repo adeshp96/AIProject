@@ -24,12 +24,12 @@ entries_required_for_single_prediction = 1
 # setting = "look" #94% by ANN, 30 iter
 # setting = "cube" #96% by ANN, 30 iter
 setting = "flickering" #91% by ANN, 30 iter
-ANN = True
+ANN = False
 SVM = False
 bagging_svm = False
-adaboost_decision_tree = False
+adaboost_decision_tree = True
 
-enable_DWT = False
+enable_DWT = True
 
 X = np.array([])
 y = []
@@ -93,28 +93,24 @@ def loadData():
 	file_regex = 'dataset2/'+ setting + '/right/*.csv'
 	label = 'R'
 	for filename in glob.iglob(file_regex):
-		print(filename)
 		addDataFromFile(filename, label)
 	file_regex = 'dataset2/'+ setting + '/left/*.csv'
 	label = 'L'
 	for filename in glob.iglob(file_regex):
-		print(filename)
 		addDataFromFile(filename, label)
 	file_regex = 'dataset2/'+ setting + '/up/*.csv'
 	label = 'U'
 	for filename in glob.iglob(file_regex):
-		print(filename)
 		addDataFromFile(filename, label)
 	file_regex = 'dataset2/'+ setting + '/down/*.csv'
 	label = 'D'
 	for filename in glob.iglob(file_regex):
-		print(filename)
 		addDataFromFile(filename, label)
 
 
 loadData() #DWT performed during load itself. A switch variable to enable/disable DWT is at code start
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0, shuffle = True)
 
 # ica = FastICA()
 # ica.fit(np.asarray(X_train))
@@ -159,7 +155,7 @@ else:
 		with open(setting + "_svc_rbf.model", "rb") as fp:   #Pickling
 			clf = pickle.load(fp)
 	elif bagging_svm:
-		with open(setting + "_bagging_svc_rbf_new.model", "rb") as fp:   #Pickling
+		with open(setting + "_bagging_svc_rbf.model", "rb") as fp:   #Pickling
 			clf = pickle.load(fp)
 	elif adaboost_decision_tree:
 		with open(setting + "_adaboost_decision_tree.model", "rb") as fp:   #Pickling
@@ -204,14 +200,13 @@ def parse_new_data():
 			sleep(5)
 			continue
 		reader = csv.reader(open(file), delimiter=',', quotechar='|')
-		next(reader, None)
+		next(reader, None)	#ignore header line
 		line_number = 0
 		for row in reader:
 			line_number += 1
 			if line_number > parsed_till_line_number:
-				if '0' not in row:
+				if '0' not in row:	#only if quality is not zero
 					if row is not None:
-						# print convertToFloatList(row[1:29:2])
 						X_live_test.append(convertToFloatList(row[1:29:2]))
 		parsed_till_line_number = line_number
 		sys.stdout.flush()

@@ -1,1 +1,3 @@
 *.pyc
+*.model
+emotiv_values*.csv
