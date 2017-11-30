@@ -5,7 +5,7 @@ from threading import Thread, Lock
 
 from .python_queue import Queue
 from .util import writer_task_to_line
-
+import os
 
 class EmotivWriter(object):
     """
@@ -50,9 +50,9 @@ class EmotivWriter(object):
         """Do not call explicitly, called upon initialization of class"""
         if self.mode == "csv":
             if sys.version_info >= (3, 0):
-                output_file = open(self.file_name, 'w', newline='')
+                output_file = open(self.file_name, 'w', 0, newline='')
             else:
-                output_file = open(self.file_name, 'wb')
+                output_file = open(self.file_name, 'wb', 0)
             if self.header_row is not None:
                 if type(self.header_row) == str:
                     output_file.write(self.header_row)
@@ -103,9 +103,12 @@ class EmotivWriter(object):
                     else:
                         output_file.write(data_to_write)
             	output_file.flush()
+                os.fsync(output_file)
             except Exception as ex:
                 if self.verbose:
                     print("Error: {}".format(ex.message))
+            output_file.flush()
+            os.fsync(output_file)
             self.lock.acquire()
             if self._stop_signal:
                 print("Writer thread stopping...")

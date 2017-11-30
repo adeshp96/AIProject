@@ -24,12 +24,14 @@ entries_required_for_single_prediction = 1
 # setting = "look" #94% by ANN, 30 iter
 # setting = "cube" #96% by ANN, 30 iter
 setting = "flickering" #91% by ANN, 30 iter
-ANN = False
+ANN = True
 SVM = False
 bagging_svm = False
-adaboost_decision_tree = True
+adaboost_decision_tree = False
 
 enable_DWT = True
+size_DWT_set = 1200
+
 
 X = np.array([])
 y = []
@@ -55,13 +57,18 @@ def doDWT(data, w):
 def doDWTSet(X):
 	X = np.array(X)
 	if enable_DWT:
-		X = X.T
-		n_cols = doDWT(X[0, :], 'sym5').shape[0]
-		X_temp = np.zeros((X.shape[0], n_cols))
-		for row in range(X.shape[0]):
-			X_temp[row, :] = doDWT(X[row, :], 'sym5')
-		X = X_temp.T
-		return X
+		X_output = np.array([])
+		for i in range(0, len(X), size_DWT_set):
+			X_mod = X[i:i + size_DWT_set,:].T
+			n_cols = doDWT(X_mod[0, :], 'sym5').shape[0]
+			X_temp = np.zeros((X_mod.shape[0], n_cols))
+			for row in range(X_mod.shape[0]):
+				X_temp[row, :] = doDWT(X_mod[row, :], 'sym5')
+			if X_output.size != 0:
+				X_output = np.append(X_output, X_temp.T, axis = 0)
+			else:
+				X_output = X_temp.T
+		return X_output
 	else:
 		return X
 
@@ -164,6 +171,11 @@ else:
 print clf
 
 
+def pretty_print(freq):
+	import operator
+	sorted_freq = sorted(freq.items(), key=operator.itemgetter(1), reverse = True)
+	return sorted_freq
+
 X_live_test = []
 
 def predict():
@@ -178,7 +190,7 @@ def predict():
 					freq[i] += 1
 				else:
 					freq[i] = 1
-			print freq
+			print pretty_print(freq)
 			X_live_test = []
 		else:
 			print "length too short to predict"
