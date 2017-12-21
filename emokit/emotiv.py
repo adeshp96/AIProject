@@ -17,7 +17,7 @@ from .tasks import EmotivOutputTask, EmotivWriterTask
 from .util import path_checker, system_platform, values_header, is_extra_data
 from .writer import EmotivWriter
 sys.path.append('..')
-import mlp_live_training_focus
+import mlp_live_training_4class
 
 
 class Emotiv(object):
@@ -175,7 +175,7 @@ class Emotiv(object):
                 if self.output_path is not None:
                     if type(self.output_path) == str:
                         output_path = path_checker(self.output_path, output_path)
-                mlp_live_training_focus.init(output_path)
+                mlp_live_training_4class.init(output_path)
                 self.value_writer = EmotivWriter(output_path, mode="csv", chunk_writes=self.chunk_writes,
                                                  chunk_size=self.chunk_size)
                 # Make the first row in the file the header with the sensor name

@@ -5,7 +5,7 @@
 
 import platform
 import time
-import mlp_live_training_focus
+import mlp_live_training_4class
 
 from emokit.emotiv import Emotiv
 
